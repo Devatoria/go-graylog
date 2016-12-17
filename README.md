@@ -1,4 +1,7 @@
 # go-graylog
+
+[![GoDoc](https://godoc.org/github.com/Devatoria/go-graylog?status.svg)](https://godoc.org/github.com/Devatoria/go-graylog)
+
 Graylog GELF messages sending using UDP, TCP or TCP/TLS, written in Golang.
 
 # Examples
