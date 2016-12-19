@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/Jeffail/gabs"
 )
@@ -52,9 +53,8 @@ func NewGraylog(e Endpoint) (*Graylog, error) {
 }
 
 // NewGraylogTLS instanciates a new graylog connection with TLS, using the given endpoint
-func NewGraylogTLS(e Endpoint, config *tls.Config) (*Graylog, error) {
-	// Resolve hostname
-	c, err := tls.Dial(string(e.Transport), fmt.Sprintf("%s:%d", e.Address, e.Port), config)
+func NewGraylogTLS(e Endpoint, timeout time.Duration, config *tls.Config) (*Graylog, error) {
+	c, err := tls.DialWithDialer(&net.Dialer{Timeout: timeout}, string(e.Transport), fmt.Sprintf("%s:%d", e.Address, e.Port), config)
 	if err != nil {
 		return nil, err
 	}
