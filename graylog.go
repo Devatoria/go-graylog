@@ -1,7 +1,9 @@
 package graylog
 
 import (
+	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 
@@ -28,6 +30,11 @@ type Graylog struct {
 	Client *net.Conn
 }
 
+// GraylogTLS represents an established graylog connection using TLS support
+type GraylogTLS struct {
+	Client *tls.Conn
+}
+
 // Message represents a GELF formated message
 type Message struct {
 	Version      string            `json:"version"`
@@ -49,30 +56,64 @@ func NewGraylog(e Endpoint) (*Graylog, error) {
 	return &Graylog{Client: &c}, nil
 }
 
-// Send sends the given GELF message, injecting extra fields, prefixing them with an underscore
-func (g *Graylog) Send(m Message) error {
+// NewGraylogTLS instanciates a new graylog connection with TLS, using the given endpoint
+func NewGraylogTLS(e Endpoint) (*GraylogTLS, error) {
+	// Resolve hostname
+	c, err := tls.Dial(string(e.Transport), fmt.Sprintf("%s:%d", e.Address, e.Port), &tls.Config{
+		InsecureSkipVerify: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &GraylogTLS{Client: c}, nil
+}
+
+// Send writes the given message to the given graylog client
+func Send(g interface{}, m Message) error {
+	data, err := prepareMessage(m)
+	if err != nil {
+		return err
+	}
+
+	// Assert given g is a Graylog or GraylogTLS struct
+	switch v := g.(type) {
+	case *Graylog:
+		_, err = (*v.Client).Write(data)
+		return err
+	case *GraylogTLS:
+		_, err = (*v.Client).Write(data)
+		return err
+	}
+
+	return errors.New("Wrong type given to Send function, expecting *Graylog or *GraylogTLS")
+}
+
+// prepareMessage marshal the given message, add extra fields and append EOL symbols
+func prepareMessage(m Message) ([]byte, error) {
 	// Marshal the GELF message in order to get base JSON
 	jsonMessage, err := json.Marshal(m)
 	if err != nil {
-		return err
+		return []byte{}, err
 	}
 
 	// Parse JSON in order to dynamically edit it
 	c, err := gabs.ParseJSON(jsonMessage)
 	if err != nil {
-		return err
+		return []byte{}, err
 	}
 
 	// Loop on extra fields and inject them into JSON
 	for key, value := range m.Extra {
 		_, err = c.Set(value, fmt.Sprintf("_%s", key))
 		if err != nil {
-			return err
+			return []byte{}, err
 		}
 	}
 
-	// Write data to socket
-	_, err = (*g.Client).Write(c.Bytes())
+	// Append the \n\0 sequence to the given message in order to indicate
+	// to graylog the end of the message
+	data := append(c.Bytes(), '\n', byte(0))
 
-	return err
+	return data, nil
 }

@@ -16,16 +16,16 @@ import (
 )
 
 func main() {
-	g, err := graylog.NewGraylog(graylog.Endpoint{
-		Transport: graylog.UDP,
+	g, err := graylog.NewGraylogTLS(graylog.Endpoint{
+		Transport: graylog.TCP,
 		Address:   "localhost",
-		Port:      2202,
+		Port:      12202,
 	})
 	if err != nil {
 		panic(err)
 	}
 
-	err = g.Send(graylog.Message{
+	err = graylog.Send(g, graylog.Message{
 		Version:      "1.1",
 		Host:         "localhost",
 		ShortMessage: "Sample test",
