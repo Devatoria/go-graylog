@@ -16,6 +16,7 @@ import (
 )
 
 func main() {
+    // Initialize a new graylog client with TLS
 	g, err := graylog.NewGraylogTLS(graylog.Endpoint{
 		Transport: graylog.TCP,
 		Address:   "localhost",
@@ -25,6 +26,7 @@ func main() {
 		panic(err)
 	}
 
+    // Send a message
 	err = g.Send(graylog.Message{
 		Version:      "1.1",
 		Host:         "localhost",
@@ -37,6 +39,11 @@ func main() {
 		},
 	})
     if err != nil {
+        panic(err)
+    }
+
+    // Close the graylog connection
+    if err := g.Close(); err != nil {
         panic(err)
     }
 }
