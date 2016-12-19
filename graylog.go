@@ -36,9 +36,9 @@ type Message struct {
 	Version      string            `json:"version"`
 	Host         string            `json:"host"`
 	ShortMessage string            `json:"short_message"`
-	FullMessage  string            `json:"full_message"`
-	Timestamp    int64             `json:"timestamp"`
-	Level        uint              `json:"level"`
+	FullMessage  string            `json:"full_message,omitempty"`
+	Timestamp    int64             `json:"timestamp,omitempty"`
+	Level        uint              `json:"level,omitempty"`
 	Extra        map[string]string `json:"-"`
 }
 
