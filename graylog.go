@@ -3,7 +3,6 @@ package graylog
 import (
 	"crypto/tls"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net"
 
@@ -27,12 +26,8 @@ type Endpoint struct {
 
 // Graylog represents an established graylog connection
 type Graylog struct {
-	Client *net.Conn
-}
-
-// GraylogTLS represents an established graylog connection using TLS support
-type GraylogTLS struct {
-	Client *tls.Conn
+	Client    *net.Conn
+	TLSClient *tls.Conn
 }
 
 // Message represents a GELF formated message
@@ -57,36 +52,31 @@ func NewGraylog(e Endpoint) (*Graylog, error) {
 }
 
 // NewGraylogTLS instanciates a new graylog connection with TLS, using the given endpoint
-func NewGraylogTLS(e Endpoint) (*GraylogTLS, error) {
+func NewGraylogTLS(e Endpoint, config *tls.Config) (*Graylog, error) {
 	// Resolve hostname
-	c, err := tls.Dial(string(e.Transport), fmt.Sprintf("%s:%d", e.Address, e.Port), &tls.Config{
-		InsecureSkipVerify: true,
-	})
+	c, err := tls.Dial(string(e.Transport), fmt.Sprintf("%s:%d", e.Address, e.Port), config)
 	if err != nil {
 		return nil, err
 	}
 
-	return &GraylogTLS{Client: c}, nil
+	return &Graylog{TLSClient: c}, nil
 }
 
 // Send writes the given message to the given graylog client
-func Send(g interface{}, m Message) error {
+func (g *Graylog) Send(m Message) error {
 	data, err := prepareMessage(m)
 	if err != nil {
 		return err
 	}
 
-	// Assert given g is a Graylog or GraylogTLS struct
-	switch v := g.(type) {
-	case *Graylog:
-		_, err = (*v.Client).Write(data)
-		return err
-	case *GraylogTLS:
-		_, err = (*v.Client).Write(data)
-		return err
+	// Check if TLS client is instanciated, otherwise send using the classic client
+	if g.TLSClient != nil {
+		_, err = (*g.TLSClient).Write(data)
+	} else {
+		_, err = (*g.Client).Write(data)
 	}
 
-	return errors.New("Wrong type given to Send function, expecting *Graylog or *GraylogTLS")
+	return err
 }
 
 // prepareMessage marshal the given message, add extra fields and append EOL symbols

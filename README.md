@@ -20,12 +20,12 @@ func main() {
 		Transport: graylog.TCP,
 		Address:   "localhost",
 		Port:      12202,
-	})
+	}, nil)
 	if err != nil {
 		panic(err)
 	}
 
-	err = graylog.Send(g, graylog.Message{
+	err = g.Send(graylog.Message{
 		Version:      "1.1",
 		Host:         "localhost",
 		ShortMessage: "Sample test",
