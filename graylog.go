@@ -79,6 +79,23 @@ func (g *Graylog) Send(m Message) error {
 	return err
 }
 
+// Close closes the opened connections of the given client
+func (g *Graylog) Close() error {
+	if g.TLSClient != nil {
+		if err := (*g.TLSClient).Close(); err != nil {
+			return err
+		}
+	}
+
+	if g.Client != nil {
+		if err := (*g.Client).Close(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // prepareMessage marshal the given message, add extra fields and append EOL symbols
 func prepareMessage(m Message) ([]byte, error) {
 	// Marshal the GELF message in order to get base JSON
