@@ -21,7 +21,7 @@ func main() {
 		Transport: graylog.TCP,
 		Address:   "localhost",
 		Port:      12202,
-	}, nil)
+	}, 3*time.Second, nil)
 	if err != nil {
 		panic(err)
 	}
